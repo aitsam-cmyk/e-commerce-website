@@ -10,6 +10,8 @@ async function getProduct(id: string) {
   return res.json();
 }
 
+import ProductGallery from "../../../components/ProductGallery";
+
 export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
   const p = await getProduct(params.id);
   return {
@@ -26,34 +28,50 @@ export default async function ProductPage({ params }: { params: { id: string } }
   if (!p) {
     return <div className="mx-auto max-w-3xl px-4 py-10">Product not found</div>;
   }
-  const images: string[] = Array.isArray((p as any).images) && (p as any).images.length > 0 ? (p as any).images : [p.imageUrl];
+  
+  const images: string[] = Array.isArray((p as any).images) && (p as any).images.length > 0 
+    ? (p as any).images 
+    : [p.imageUrl];
+
   return (
-    <div className="mx-auto max-w-5xl px-4 py-10 grid gap-8 md:grid-cols-2">
-      <div>
-        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-zinc-100">
-          <Image src={images[0]} alt={p.title} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover transition-transform duration-300 hover:scale-[1.02]" />
-        </div>
-        <div className="mt-3 flex gap-2">
-          {images.map((src, i) => (
-            <div key={i} className="relative h-16 w-16 overflow-hidden rounded-md border border-zinc-200">
-              <Image src={src} alt={`${p.title} ${i + 1}`} fill sizes="64px" className="object-cover" />
+    <div className="mx-auto max-w-7xl px-4 py-12 lg:px-8">
+      <div className="grid gap-12 lg:grid-cols-2">
+        <ProductGallery images={images} title={p.title} />
+        
+        <div className="flex flex-col space-y-6">
+          <div>
+            <h1 className="font-serif text-4xl font-medium text-zinc-900">{p.title}</h1>
+            <div className="mt-2 flex items-center gap-4">
+               <span className="text-2xl font-bold text-zinc-900">Rs {Number(p.price).toLocaleString()}</span>
+               {p.stock > 0 ? (
+                 <span className="inline-flex items-center rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-medium text-green-800">In Stock</span>
+               ) : (
+                 <span className="inline-flex items-center rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-medium text-red-800">Out of Stock</span>
+               )}
             </div>
-          ))}
+          </div>
+
+          <div className="prose prose-zinc max-w-none">
+            <p className="text-lg leading-relaxed text-zinc-600">{p.description}</p>
+          </div>
+
+          <div className="border-t border-zinc-100 pt-6">
+            <AddToCartButton
+              item={{
+                productId: p._id,
+                title: p.title,
+                price: Number(p.price),
+                imageUrl: p.imageUrl
+              }}
+            />
+          </div>
+
+          <div className="mt-8">
+            <Link href="/products" className="text-sm font-medium text-zinc-500 hover:text-zinc-900">
+              ← Back to all products
+            </Link>
+          </div>
         </div>
-      </div>
-      <div className="space-y-4">
-        <h1 className="font-serif text-2xl">{p.title}</h1>
-        <p className="text-zinc-600">{p.description}</p>
-        <div className="text-2xl font-semibold">${Number(p.price).toFixed(2)}</div>
-        <AddToCartButton
-          item={{
-            productId: p._id,
-            title: p.title,
-            price: Number(p.price),
-            imageUrl: p.imageUrl
-          }}
-        />
-        <Link href="/products" className="inline-block rounded-md border border-zinc-300 px-4 py-2 text-zinc-700 transition hover:bg-zinc-100">Back to products</Link>
       </div>
     </div>
   );
