@@ -9,10 +9,14 @@
    quantity?: number;
  };
  
- export default function AddToCartButton({ item }: { item: Item }) {
+ export default function AddToCartButton({ item, available = true }: { item: Item; available?: boolean }) {
    const router = useRouter();
  
    function addToCart() {
+    if (!available) {
+      alert("Product is out of stock");
+      return;
+    }
      try {
        const raw = localStorage.getItem("cart");
        const cart: Item[] = raw ? JSON.parse(raw) : [];
@@ -31,6 +35,10 @@
    }
  
    function buyNow() {
+     if (!available) {
+       alert("Product is out of stock");
+       return;
+     }
      const draft = { items: [{ ...item, quantity: 1 }] };
      sessionStorage.setItem("checkoutDraft", JSON.stringify(draft));
      router.push("/checkout");

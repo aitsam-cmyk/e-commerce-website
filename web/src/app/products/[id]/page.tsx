@@ -64,6 +64,7 @@ export default async function ProductPage({ params }: { params: { id: string } }
                 price: Number(p.price),
                 imageUrl: p.imageUrl
               }}
+              available={p.stock > 0}
             />
           </div>
 
