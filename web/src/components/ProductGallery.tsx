@@ -12,7 +12,7 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
 
   return (
     <div>
-      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-zinc-100 border border-zinc-200 shadow-sm">
+      <div className="relative aspect-square w-full overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 shadow-sm">
         <Image 
           src={selectedImage} 
           alt={title} 
@@ -30,8 +30,8 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
               onClick={() => setSelectedImage(src)}
               className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
                 selectedImage === src 
-                  ? "border-zinc-900 ring-2 ring-zinc-900/20" 
-                  : "border-zinc-200 hover:border-zinc-400"
+                  ? "border-zinc-900 dark:border-zinc-100 ring-2 ring-zinc-900/20 dark:ring-zinc-100/20" 
+                  : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
               }`}
             >
               <Image src={src} alt={`${title} ${i + 1}`} fill sizes="80px" className="object-cover" />

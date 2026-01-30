@@ -57,9 +57,33 @@ export default function NavBar() {
     };
     window.addEventListener("storage", onStorage);
     window.addEventListener("cart:updated", onCartUpdated as any);
+    
+    const onAuthChange = () => {
+      const token = localStorage.getItem("token");
+      if (token) {
+        setLoggedIn(true);
+        try {
+            const payload = JSON.parse(atob(token.split('.')[1]));
+            if (payload.role === 'admin') {
+                setIsAdmin(true);
+            } else {
+                setIsCustomer(true);
+            }
+        } catch (e) {
+            console.error("Failed to decode token", e);
+        }
+      } else {
+        setLoggedIn(false);
+        setIsAdmin(false);
+        setIsCustomer(false);
+      }
+    };
+    window.addEventListener("auth-change", onAuthChange);
+
     return () => {
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("cart:updated", onCartUpdated as any);
+      window.removeEventListener("auth-change", onAuthChange);
     };
   }, []);
   return (
@@ -71,6 +95,7 @@ export default function NavBar() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link href="/" className="hover:text-emerald-400 transition-colors">Home</Link>
           <Link href="/products" className="hover:text-emerald-400 transition-colors">Products</Link>
+          <Link href="/testimonials" className="hover:text-emerald-400 transition-colors">Testimonials</Link>
           {!loggedIn && (
              <>
                <Link href="/login" className="hover:text-emerald-400 transition-colors">Login</Link>
@@ -84,6 +109,7 @@ export default function NavBar() {
             <button 
                 onClick={() => {
                     localStorage.removeItem("token");
+                    window.dispatchEvent(new Event("auth-change"));
                     window.location.href = "/";
                 }}
                 className="text-red-400 hover:text-red-300 transition-colors"

@@ -13,8 +13,8 @@ async function getProducts(searchParams?: Record<string, string>): Promise<Produ
 export default async function ProductsPage({ searchParams }: { searchParams?: Record<string, string> }) {
   const products = await getProducts(searchParams);
   return (
-    <div className="mx-auto max-w-7xl px-4 py-10">
-      <h1 className="text-2xl font-semibold">Products</h1>
+    <div className="mx-auto max-w-7xl px-4 py-10 dark:bg-zinc-950 min-h-screen">
+      <h1 className="text-2xl font-semibold dark:text-zinc-100">Products</h1>
       <ProductFilters />
       <ProductGrid products={products} />
     </div>

@@ -5,8 +5,8 @@ import { Product } from "../types/product";
 export default function ProductCard({ product }: { product: Product }) {
   return (
     <Link href={`/products/${product._id}`} className="block">
-      <div className="group rounded-xl border border-zinc-200 bg-white p-3 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">
-        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-zinc-100">
+      <div className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">
+        <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
           <Image
             src={product.imageUrl || "https://dummyimage.com/600x600/eee/aaa.jpg&text=Product"}
             alt={product.title}
@@ -25,11 +25,11 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
         <div className="mt-3 space-y-1">
-          <h3 className="line-clamp-1 text-sm font-medium">{product.title}</h3>
-          <p className="line-clamp-2 text-xs text-zinc-600">{product.description}</p>
+          <h3 className="line-clamp-1 text-sm font-medium dark:text-zinc-100">{product.title}</h3>
+          <p className="line-clamp-2 text-xs text-zinc-600 dark:text-zinc-400">{product.description}</p>
           <div className="flex items-center justify-between pt-2">
-            <span className="text-base font-semibold">Rs {product.price.toLocaleString()}</span>
-            <span className="rounded-md bg-zinc-900 px-3 py-2 text-xs text-white transition-colors group-hover:bg-zinc-700">
+            <span className="text-base font-semibold dark:text-zinc-100">Rs {product.price.toLocaleString()}</span>
+            <span className="rounded-md bg-zinc-900 dark:bg-zinc-100 px-3 py-2 text-xs text-white dark:text-zinc-900 transition-colors group-hover:bg-zinc-700 dark:group-hover:bg-zinc-200">
               View
             </span>
           </div>

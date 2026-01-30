@@ -31,9 +31,9 @@ export default function RootLayout({
     }
 
     // 3. Optional: Har refresh par token clear karne ke liye (Aapki request ke mutabiq)
-    // window.onbeforeunload = () => {
-    //   localStorage.removeItem("token");
-    // };
+    window.onbeforeunload = () => {
+      localStorage.removeItem("token");
+    };
 
   }, [pathname, router]);
 

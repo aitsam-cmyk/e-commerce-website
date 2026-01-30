@@ -22,6 +22,7 @@ export default function LoginPage() {
 
     if (res.ok) {
       localStorage.setItem("token", data.token);
+      window.dispatchEvent(new Event("auth-change"));
       alert("Login Successful");
       
       // Check role and redirect

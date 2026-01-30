@@ -40,18 +40,18 @@ export default function Testimonials() {
 
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
-      <h2 className="text-2xl font-semibold tracking-tight">Testimonials</h2>
+      <h2 className="text-2xl font-semibold tracking-tight dark:text-zinc-100">Testimonials</h2>
       <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
         {testimonials.map((t) => (
-          <div key={t._id} className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:scale-[1.02] shadow-sm">
+          <div key={t._id} className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-6 transition hover:scale-[1.02] shadow-sm">
             <div className="flex items-center gap-2">
-              <span className="font-medium">{t.name}</span>
+              <span className="font-medium dark:text-zinc-100">{t.name}</span>
               <span className="text-yellow-500 text-sm">
                 {Array.from({ length: t.rating }).map((_, j) => "★").join("")}
-                {Array.from({ length: 5 - t.rating }).map((_, j) => <span key={j} className="text-zinc-300">★</span>)}
+                {Array.from({ length: 5 - t.rating }).map((_, j) => <span key={j} className="text-zinc-300 dark:text-zinc-600">★</span>)}
               </span>
             </div>
-            <p className="mt-2 text-zinc-600">{t.text}</p>
+            <p className="mt-2 text-zinc-600 dark:text-zinc-300">{t.text}</p>
           </div>
         ))}
       </div>
