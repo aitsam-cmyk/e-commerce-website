@@ -75,6 +75,17 @@ export default function NavBar() {
           <Link href="/contact" className="hover:text-emerald-400 transition-colors">Contact</Link>
           {isCustomer && <Link href="/orders" className="hover:text-emerald-400 transition-colors">Orders</Link>}
           {isAdmin && <Link href="/admin" className="text-emerald-400 font-bold hover:text-emerald-300 border border-emerald-500/30 px-3 py-1 rounded-full bg-emerald-500/10">Admin Dashboard</Link>}
+          {loggedIn && (
+            <button 
+                onClick={() => {
+                    localStorage.removeItem("token");
+                    window.location.href = "/";
+                }}
+                className="text-red-400 hover:text-red-300 transition-colors"
+            >
+                Logout
+            </button>
+          )}
         </nav>
         <div className="flex items-center gap-4">
           <ThemeToggle />

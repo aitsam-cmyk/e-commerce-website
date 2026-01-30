@@ -10,7 +10,12 @@ export default function CheckoutPage() {
   const [phone, setPhone] = useState("");
   const router = useRouter();
 
-  function proceedToPayment() {
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault(); // Prevents page reload
+    if (!name || !phone || !shippingAddress) {
+        alert("Please fill in all required fields (Name, Phone, Address).");
+        return;
+    }
     const draft = { items, shippingAddress, email, name, phone };
     sessionStorage.setItem("checkoutDraft", JSON.stringify(draft));
     router.push("/checkout/payment");
@@ -45,13 +50,13 @@ export default function CheckoutPage() {
       <h1 className="font-serif text-2xl mb-6">Shipping & Billing</h1>
       <div className="grid gap-6 lg:grid-cols-[1fr_380px]">
         <div className="space-y-6">
-          <div className="grid gap-3 sm:grid-cols-2">
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" className="rounded-md border border-zinc-300 px-3 py-2 text-sm" />
+          <form id="checkout-form" onSubmit={handleSubmit} className="grid gap-3 sm:grid-cols-2">
+            <input required value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name *" className="rounded-md border border-zinc-300 px-3 py-2 text-sm" />
             <input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Email (optional)" className="rounded-md border border-zinc-300 px-3 py-2 text-sm" />
-            <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone" className="rounded-md border border-zinc-300 px-3 py-2 text-sm" />
-            <input value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} placeholder="Shipping address" className="rounded-md border border-zinc-300 px-3 py-2 text-sm sm:col-span-2" />
-          </div>
-          <button onClick={proceedToPayment} className="rounded-md bg-emerald-600 px-4 py-2 text-white transition hover:scale-[1.02]">Proceed to Pay</button>
+            <input required value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="Phone *" className="rounded-md border border-zinc-300 px-3 py-2 text-sm" />
+            <input required value={shippingAddress} onChange={(e) => setShippingAddress(e.target.value)} placeholder="Shipping address *" className="rounded-md border border-zinc-300 px-3 py-2 text-sm sm:col-span-2" />
+          </form>
+          <button type="submit" form="checkout-form" className="rounded-md bg-emerald-600 px-4 py-2 text-white transition hover:scale-[1.02]">Proceed to Pay</button>
           <p className="text-xs text-zinc-500">Guest checkout supported. Payment method will be selected on next step.</p>
         </div>
         <aside className="sticky top-20 h-fit rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
@@ -73,8 +78,8 @@ export default function CheckoutPage() {
               <div className="flex justify-between"><span>Tax</span><span>Rs {tax}</span></div>
               <div className="flex justify-between pt-2 text-base font-bold"><span>Total</span><span>Rs {total}</span></div>
               <div className="mt-3 text-xs text-zinc-500">Secure Checkout • SSL Encrypted • Money Back Guarantee</div>
-              <button onClick={proceedToPayment} className="mt-3 w-full rounded-md bg-emerald-600 px-4 py-2 text-white">Proceed to Pay</button>
-              <button className="mt-2 w-full text-xs text-zinc-600">Have a discount code?</button>
+              <button type="submit" form="checkout-form" className="mt-3 w-full rounded-md bg-emerald-600 px-4 py-2 text-white">Proceed to Pay</button>
+              <button type="button" className="mt-2 w-full text-xs text-zinc-600">Have a discount code?</button>
             </div>
           </div>
         </aside>

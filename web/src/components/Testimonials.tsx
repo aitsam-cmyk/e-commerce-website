@@ -1,19 +1,55 @@
-const testimonials = [
-  { name: "Ahsan", text: "Great products and fast delivery!", rating: 5 },
-  { name: "Sara", text: "Love the quality and support.", rating: 4 },
-  { name: "Bilal", text: "Smooth checkout and good prices.", rating: 5 }
-];
+"use client";
+
+import { useEffect, useState } from "react";
+
+type Testimonial = {
+  _id: string;
+  name: string;
+  text: string;
+  rating: number;
+};
 
 export default function Testimonials() {
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+
+  useEffect(() => {
+    fetch(`${base}/api/testimonials?active=true`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTestimonials(data);
+        } else {
+            // Fallback if no DB data
+            setTestimonials([
+                { _id: "1", name: "Ahsan", text: "Great products and fast delivery!", rating: 5 },
+                { _id: "2", name: "Sara", text: "Love the quality and support.", rating: 4 },
+                { _id: "3", name: "Bilal", text: "Smooth checkout and good prices.", rating: 5 }
+            ]);
+        }
+      })
+      .catch(() => {
+         // Fallback on error
+         setTestimonials([
+            { _id: "1", name: "Ahsan", text: "Great products and fast delivery!", rating: 5 },
+            { _id: "2", name: "Sara", text: "Love the quality and support.", rating: 4 },
+            { _id: "3", name: "Bilal", text: "Smooth checkout and good prices.", rating: 5 }
+        ]);
+      });
+  }, []);
+
   return (
     <section className="mx-auto max-w-7xl px-4 py-10">
       <h2 className="text-2xl font-semibold tracking-tight">Testimonials</h2>
       <div className="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {testimonials.map((t, i) => (
-          <div key={i} className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:scale-[1.02]">
+        {testimonials.map((t) => (
+          <div key={t._id} className="rounded-xl border border-zinc-200 bg-white p-6 transition hover:scale-[1.02] shadow-sm">
             <div className="flex items-center gap-2">
               <span className="font-medium">{t.name}</span>
-              <span className="text-yellow-500">{Array.from({ length: t.rating }).map((_, j) => "★").join("")}</span>
+              <span className="text-yellow-500 text-sm">
+                {Array.from({ length: t.rating }).map((_, j) => "★").join("")}
+                {Array.from({ length: 5 - t.rating }).map((_, j) => <span key={j} className="text-zinc-300">★</span>)}
+              </span>
             </div>
             <p className="mt-2 text-zinc-600">{t.text}</p>
           </div>

@@ -11,6 +11,8 @@ type Product = {
   imageUrl: string;
   category: string;
   inStock: boolean;
+  stock: number;
+  sales: number;
 };
 
 type Category = {
@@ -28,18 +30,46 @@ type Banner = {
   order?: number;
 };
 
+type Order = {
+    _id: string;
+    items: any[];
+    totalAmount: number;
+    status: string;
+    createdAt: string;
+    userId: string;
+};
+
+type Review = {
+    _id: string;
+    productId: string;
+    rating: number;
+    content: string;
+    createdAt: string;
+};
+
+type Testimonial = {
+    _id: string;
+    name: string;
+    text: string;
+    rating: number;
+    isActive: boolean;
+};
+
 export default function AdminPage() {
   const [role, setRole] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"products" | "categories" | "banners">("products");
+  const [activeTab, setActiveTab] = useState<"products" | "categories" | "banners" | "orders" | "reviews" | "testimonials">("products");
   
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [banners, setBanners] = useState<Banner[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<any>(null);
-  const [modalType, setModalType] = useState<"product" | "category" | "banner" | null>(null);
+  const [modalType, setModalType] = useState<"product" | "category" | "banner" | "testimonial" | null>(null);
 
   const router = useRouter();
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
@@ -51,7 +81,6 @@ export default function AdminPage() {
       router.push("/login");
       return;
     }
-    // Decode token or fetch me
     try {
         const payload = JSON.parse(atob(token.split('.')[1]));
         if (payload.role !== 'admin') {
@@ -75,73 +104,117 @@ export default function AdminPage() {
       fetch(`${base}/api/products`, { headers }).then((r) => r.json()),
       fetch(`${base}/api/categories`, { headers }).then((r) => r.json()),
       fetch(`${base}/api/banners`, { headers }).then((r) => r.json()),
-    ]).then(([ps, cs, bs]) => {
-      setProducts(Array.isArray(ps) ? ps : []);
-      setCategories(Array.isArray(cs) ? cs : []);
-      setBanners(Array.isArray(bs) ? bs : []);
-    });
+      fetch(`${base}/api/orders/all`, { headers }).then((r) => r.json()),
+      fetch(`${base}/api/reviews`, { headers }).then((r) => r.json()),
+      fetch(`${base}/api/testimonials`, { headers }).then((r) => r.json()),
+    ]).then(([ps, cs, bs, os, rs, ts]) => {
+      if (Array.isArray(ps)) setProducts(ps);
+      if (Array.isArray(cs)) setCategories(cs);
+      if (Array.isArray(bs)) setBanners(bs);
+      if (Array.isArray(os)) setOrders(os);
+      if (Array.isArray(rs)) setReviews(rs);
+      if (Array.isArray(ts)) setTestimonials(ts);
+    }).catch(console.error);
   };
 
   useEffect(() => {
     if (role === "admin") refreshData();
-  }, [role, base]);
+  }, [role]);
 
   // Actions
-  async function handleDelete(id: string, type: "products" | "categories" | "banners") {
+  const handleDelete = async (endpoint: string, id: string) => {
     if (!confirm("Are you sure?")) return;
-    const token = localStorage.getItem("token") || "";
-    await fetch(`${base}/api/${type}/${id}`, {
+    const token = localStorage.getItem("token");
+    await fetch(`${base}/api/${endpoint}/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
     refreshData();
-  }
+  };
 
-  async function toggleStock(id: string, inStock: boolean) {
-    const token = localStorage.getItem("token") || "";
-    await fetch(`${base}/api/products/${id}/stock`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ inStock }),
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    const method = editingItem?._id ? "PATCH" : "POST";
+    const url = editingItem?._id 
+      ? `${base}/api/${modalType === 'testimonial' ? 'testimonials' : modalType === 'banner' ? 'banners' : modalType === 'category' ? 'categories' : 'products'}/${editingItem._id}`
+      : `${base}/api/${modalType === 'testimonial' ? 'testimonials' : modalType === 'banner' ? 'banners' : modalType === 'category' ? 'categories' : 'products'}`;
+
+    // Clean up numeric fields
+    const body = { ...editingItem };
+    if (modalType === 'product') {
+        body.price = Number(body.price);
+        body.stock = Number(body.stock);
+    }
+    if (modalType === 'testimonial') {
+        body.rating = Number(body.rating);
+    }
+
+    await fetch(url, {
+      method,
+      headers: { 
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`
+      },
+      body: JSON.stringify(body),
     });
-    refreshData();
-  }
-
-  function openCreateModal(type: "product" | "category" | "banner") {
+    setModalOpen(false);
     setEditingItem(null);
-    setModalType(type);
-    setModalOpen(true);
-  }
+    refreshData();
+  };
 
-  function openEditModal(item: any, type: "product" | "category" | "banner") {
-    setEditingItem(item);
-    setModalType(type);
-    setModalOpen(true);
-  }
+  const handleUpdateOrderStatus = async (id: string, status: string) => {
+      const token = localStorage.getItem("token");
+      await fetch(`${base}/api/orders/${id}`, {
+          method: "PATCH",
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}` 
+          },
+          body: JSON.stringify({ status })
+      });
+      refreshData();
+  };
 
-  if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
-  if (role !== "admin") return null;
+  // Stats
+  const totalEarnings = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const totalSales = products.reduce((acc, p) => acc + (p.sales || 0), 0);
+  const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
+
+  if (loading || !role) return <div className="p-10">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-zinc-50 pb-20">
-      <div className="bg-white shadow-sm border-b border-zinc-200">
-        <div className="mx-auto max-w-7xl px-4 py-6">
-            <h1 className="text-3xl font-bold tracking-tight text-zinc-900">Admin Dashboard</h1>
-            <p className="mt-1 text-sm text-zinc-500">Manage your store content and inventory.</p>
-        </div>
-      </div>
+    <div className="min-h-screen bg-zinc-50 p-6 md:p-10">
+      <div className="mx-auto max-w-7xl">
+        <header className="mb-8 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-zinc-900">Admin Dashboard</h1>
+            <p className="text-zinc-500">Manage your store efficiently</p>
+          </div>
+          <div className="flex gap-4">
+              <div className="bg-white p-3 rounded-lg shadow-sm border border-zinc-200">
+                  <div className="text-xs text-zinc-500 uppercase">Total Earnings</div>
+                  <div className="text-lg font-bold text-green-600">Rs {totalEarnings.toLocaleString()}</div>
+              </div>
+              <div className="bg-white p-3 rounded-lg shadow-sm border border-zinc-200">
+                  <div className="text-xs text-zinc-500 uppercase">Items Sold</div>
+                  <div className="text-lg font-bold text-blue-600">{totalSales}</div>
+              </div>
+              <div className="bg-white p-3 rounded-lg shadow-sm border border-zinc-200">
+                  <div className="text-xs text-zinc-500 uppercase">Stock Value</div>
+                  <div className="text-lg font-bold text-purple-600">{totalStock} units</div>
+              </div>
+          </div>
+        </header>
 
-      <div className="mx-auto max-w-7xl px-4 py-8">
         {/* Tabs */}
-        <div className="flex space-x-1 rounded-xl bg-zinc-200 p-1 mb-8 max-w-md">
-          {(["products", "categories", "banners"] as const).map((tab) => (
+        <div className="mb-6 flex gap-2 overflow-x-auto border-b border-zinc-200 pb-2">
+          {["products", "categories", "banners", "orders", "reviews", "testimonials"].map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`w-full rounded-lg py-2.5 text-sm font-medium leading-5 ring-white ring-opacity-60 ring-offset-2 ring-offset-emerald-400 focus:outline-none focus:ring-2 ${
-                activeTab === tab
-                  ? "bg-white text-emerald-700 shadow"
-                  : "text-zinc-600 hover:bg-white/[0.12] hover:text-emerald-800"
+              onClick={() => setActiveTab(tab as any)}
+              className={`rounded-md px-4 py-2 text-sm font-medium transition ${
+                activeTab === tab ? "bg-zinc-900 text-white" : "bg-white text-zinc-600 hover:bg-zinc-100"
               }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -150,202 +223,247 @@ export default function AdminPage() {
         </div>
 
         {/* Content */}
-        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 overflow-hidden">
-            <div className="p-6 border-b border-zinc-200 flex justify-between items-center bg-zinc-50/50">
-                <h2 className="text-xl font-semibold text-zinc-800">
-                    {activeTab === "products" && "Product Inventory"}
-                    {activeTab === "categories" && "Categories"}
-                    {activeTab === "banners" && "Promotional Banners"}
-                </h2>
+        <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-sm">
+          {activeTab === "products" && (
+            <div>
+              <div className="mb-4 flex justify-between">
+                <h2 className="text-xl font-semibold">Products</h2>
                 <button 
-                    onClick={() => openCreateModal(activeTab === "products" ? "product" : activeTab === "categories" ? "category" : "banner")}
-                    className="inline-flex items-center gap-2 rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-zinc-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-zinc-900"
+                  onClick={() => { setEditingItem({}); setModalType("product"); setModalOpen(true); }}
+                  className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
                 >
-                    + Add New
+                  + Add Product
                 </button>
-            </div>
-
-            <div className="divide-y divide-zinc-100">
-                {activeTab === "products" && (
-                    <div className="grid grid-cols-1">
-                        {products.map((p) => (
-                            <div key={p._id} className="p-4 hover:bg-zinc-50 transition-colors flex items-center justify-between gap-4">
-                                <div className="flex items-center gap-4 flex-1">
-                                    <div className="h-16 w-16 flex-shrink-0 overflow-hidden rounded-lg border border-zinc-200 bg-zinc-100">
-                                        <img src={p.imageUrl || "https://via.placeholder.com/150"} alt={p.title} className="h-full w-full object-cover object-center" />
-                                    </div>
-                                    <div>
-                                        <h3 className="font-medium text-zinc-900">{p.title}</h3>
-                                        <p className="text-sm text-zinc-500">${p.price} • {p.category}</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3">
-                                    <button 
-                                        onClick={() => toggleStock(p._id, !p.inStock)}
-                                        className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                                            p.inStock 
-                                            ? "bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100" 
-                                            : "bg-red-50 text-red-700 border-red-200 hover:bg-red-100"
-                                        }`}
-                                    >
-                                        {p.inStock ? "In Stock" : "Out of Stock"}
-                                    </button>
-                                    <div className="flex items-center border-l border-zinc-200 pl-3 gap-2">
-                                        <button onClick={() => openEditModal(p, "product")} className="text-zinc-400 hover:text-emerald-600">
-                                            Edit
-                                        </button>
-                                        <button onClick={() => handleDelete(p._id, "products")} className="text-zinc-400 hover:text-red-600">
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        ))}
-                        {products.length === 0 && <div className="p-8 text-center text-zinc-500">No products found.</div>}
+              </div>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {products.map((p) => (
+                  <div key={p._id} className="flex flex-col justify-between rounded-lg border p-4">
+                    <div>
+                        <div className="flex justify-between">
+                            <h3 className="font-medium">{p.title}</h3>
+                            <span className={`text-xs px-2 py-1 rounded ${p.stock > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {p.stock} left
+                            </span>
+                        </div>
+                        <p className="text-sm text-zinc-500">Rs {p.price}</p>
+                        <p className="text-xs text-zinc-400">Sold: {p.sales}</p>
                     </div>
-                )}
-
-                {activeTab === "categories" && (
-                     <div className="grid grid-cols-1">
-                        {categories.map((c) => (
-                            <div key={c._id} className="p-4 hover:bg-zinc-50 transition-colors flex items-center justify-between">
-                                <span className="font-medium text-zinc-900">{c.name}</span>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => openEditModal(c, "category")} className="text-sm text-zinc-600 hover:text-emerald-600">Edit</button>
-                                    <button onClick={() => handleDelete(c._id, "categories")} className="text-sm text-zinc-600 hover:text-red-600">Delete</button>
-                                </div>
-                            </div>
-                        ))}
-                     </div>
-                )}
-
-                {activeTab === "banners" && (
-                    <div className="grid grid-cols-1">
-                        {banners.map((b) => (
-                            <div key={b._id} className="p-4 hover:bg-zinc-50 transition-colors flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                     <div className="h-12 w-24 flex-shrink-0 overflow-hidden rounded border border-zinc-200 bg-zinc-100">
-                                        <img src={b.imageUrl} alt="Banner" className="h-full w-full object-cover" />
-                                    </div>
-                                    <span className="text-sm font-medium">{b.title || "Untitled Banner"}</span>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <button onClick={() => openEditModal(b, "banner")} className="text-sm text-zinc-600 hover:text-emerald-600">Edit</button>
-                                    <button onClick={() => handleDelete(b._id, "banners")} className="text-sm text-zinc-600 hover:text-red-600">Delete</button>
-                                </div>
-                            </div>
-                        ))}
+                    <div className="mt-4 flex gap-2">
+                      <button onClick={() => { setEditingItem(p); setModalType("product"); setModalOpen(true); }} className="text-sm text-blue-600 hover:underline">Edit</button>
+                      <button onClick={() => handleDelete("products", p._id)} className="text-sm text-red-600 hover:underline">Delete</button>
                     </div>
-                )}
+                  </div>
+                ))}
+              </div>
             </div>
+          )}
+
+          {activeTab === "categories" && (
+             <div>
+             <div className="mb-4 flex justify-between">
+               <h2 className="text-xl font-semibold">Categories</h2>
+               <button 
+                 onClick={() => { setEditingItem({}); setModalType("category"); setModalOpen(true); }}
+                 className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+               >
+                 + Add Category
+               </button>
+             </div>
+             <div className="space-y-2">
+                {categories.map(c => (
+                    <div key={c._id} className="flex items-center justify-between rounded border p-3">
+                        <span>{c.name} {c.isActive ? '(Active)' : '(Inactive)'}</span>
+                        <div className="flex gap-2">
+                            <button onClick={() => { setEditingItem(c); setModalType("category"); setModalOpen(true); }} className="text-sm text-blue-600">Edit</button>
+                            <button onClick={() => handleDelete("categories", c._id)} className="text-sm text-red-600">Delete</button>
+                        </div>
+                    </div>
+                ))}
+             </div>
+           </div>
+          )}
+          
+          {activeTab === "banners" && (
+            <div>
+            <div className="mb-4 flex justify-between">
+              <h2 className="text-xl font-semibold">Banners</h2>
+              <button 
+                onClick={() => { setEditingItem({}); setModalType("banner"); setModalOpen(true); }}
+                className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                + Add Banner
+              </button>
+            </div>
+            <div className="space-y-4">
+               {banners.map(b => (
+                   <div key={b._id} className="flex items-center gap-4 rounded border p-3">
+                       <img src={b.imageUrl} alt="banner" className="h-16 w-32 object-cover rounded" />
+                       <div className="flex-1">
+                           <div className="font-medium">{b.title || "No Title"}</div>
+                           <div className="text-sm text-zinc-500">{b.link}</div>
+                       </div>
+                       <div className="flex gap-2">
+                           <button onClick={() => { setEditingItem(b); setModalType("banner"); setModalOpen(true); }} className="text-sm text-blue-600">Edit</button>
+                           <button onClick={() => handleDelete("banners", b._id)} className="text-sm text-red-600">Delete</button>
+                       </div>
+                   </div>
+               ))}
+            </div>
+          </div>
+          )}
+
+          {activeTab === "orders" && (
+              <div>
+                  <h2 className="mb-4 text-xl font-semibold">Orders</h2>
+                  <div className="space-y-4">
+                      {orders.map(order => (
+                          <div key={order._id} className="rounded border p-4">
+                              <div className="flex justify-between items-center mb-2">
+                                  <span className="font-mono text-sm">{order._id.slice(-6)}</span>
+                                  <select 
+                                    value={order.status} 
+                                    onChange={(e) => handleUpdateOrderStatus(order._id, e.target.value)}
+                                    className="text-sm border rounded p-1"
+                                  >
+                                      <option value="pending">Pending</option>
+                                      <option value="processing">Processing</option>
+                                      <option value="shipped">Shipped</option>
+                                      <option value="delivered">Delivered</option>
+                                      <option value="cancelled">Cancelled</option>
+                                  </select>
+                              </div>
+                              <div className="text-sm">
+                                  Items: {order.items.length} | Total: Rs {order.totalAmount}
+                              </div>
+                              <div className="text-xs text-zinc-500 mt-1">
+                                  {new Date(order.createdAt).toLocaleString()}
+                              </div>
+                          </div>
+                      ))}
+                  </div>
+              </div>
+          )}
+
+          {activeTab === "reviews" && (
+              <div>
+                  <h2 className="mb-4 text-xl font-semibold">Reviews</h2>
+                  <div className="space-y-4">
+                      {reviews.map(r => (
+                          <div key={r._id} className="rounded border p-4">
+                              <div className="flex justify-between">
+                                  <span className="text-yellow-500">{"★".repeat(r.rating)}</span>
+                                  <button onClick={() => handleDelete("reviews", r._id)} className="text-red-600 text-sm">Delete</button>
+                              </div>
+                              <p className="mt-2 text-zinc-700">{r.content}</p>
+                              <div className="text-xs text-zinc-400 mt-2">Product ID: {r.productId}</div>
+                          </div>
+                      ))}
+                      {reviews.length === 0 && <p className="text-zinc-500">No reviews found.</p>}
+                  </div>
+              </div>
+          )}
+
+          {activeTab === "testimonials" && (
+              <div>
+                <div className="mb-4 flex justify-between">
+                  <h2 className="text-xl font-semibold">Testimonials</h2>
+                  <button 
+                    onClick={() => { setEditingItem({}); setModalType("testimonial"); setModalOpen(true); }}
+                    className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                  >
+                    + Add Testimonial
+                  </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {testimonials.map(t => (
+                        <div key={t._id} className="rounded border p-4 bg-zinc-50">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className="font-bold">{t.name}</h3>
+                                    <div className="text-yellow-500 text-sm">{"★".repeat(t.rating)}</div>
+                                </div>
+                                <div className="flex gap-2">
+                                    <button onClick={() => { setEditingItem(t); setModalType("testimonial"); setModalOpen(true); }} className="text-xs text-blue-600">Edit</button>
+                                    <button onClick={() => handleDelete("testimonials", t._id)} className="text-xs text-red-600">Delete</button>
+                                </div>
+                            </div>
+                            <p className="mt-2 text-sm text-zinc-600 italic">"{t.text}"</p>
+                        </div>
+                    ))}
+                </div>
+              </div>
+          )}
         </div>
       </div>
 
+      {/* Modal */}
       {modalOpen && (
-        <Modal 
-            isOpen={modalOpen} 
-            onClose={() => setModalOpen(false)} 
-            type={modalType!} 
-            initialData={editingItem} 
-            refreshData={refreshData}
-            base={base}
-        />
+        <div className="fixed inset-0 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h3 className="mb-4 text-xl font-bold capitalize">
+              {editingItem._id ? "Edit" : "Add"} {modalType}
+            </h3>
+            <form onSubmit={handleSave} className="flex flex-col gap-3">
+              
+              {modalType === "product" && (
+                <>
+                  <input placeholder="Title" required className="rounded border p-2" value={editingItem.title || ""} onChange={e => setEditingItem({...editingItem, title: e.target.value})} />
+                  <textarea placeholder="Description" required className="rounded border p-2" value={editingItem.description || ""} onChange={e => setEditingItem({...editingItem, description: e.target.value})} />
+                  <input type="number" placeholder="Price" required className="rounded border p-2" value={editingItem.price || ""} onChange={e => setEditingItem({...editingItem, price: e.target.value})} />
+                  <input placeholder="Image URL" required className="rounded border p-2" value={editingItem.imageUrl || ""} onChange={e => setEditingItem({...editingItem, imageUrl: e.target.value})} />
+                  <input placeholder="Category ID or Name" required className="rounded border p-2" value={editingItem.category || ""} onChange={e => setEditingItem({...editingItem, category: e.target.value})} />
+                  <div className="flex gap-2">
+                      <input type="number" placeholder="Stock" required className="w-1/2 rounded border p-2" value={editingItem.stock || ""} onChange={e => setEditingItem({...editingItem, stock: e.target.value})} />
+                      <label className="flex items-center gap-2 w-1/2">
+                        <input type="checkbox" checked={editingItem.inStock ?? true} onChange={e => setEditingItem({...editingItem, inStock: e.target.checked})} />
+                        In Stock
+                      </label>
+                  </div>
+                </>
+              )}
+
+              {modalType === "category" && (
+                <>
+                  <input placeholder="Name" required className="rounded border p-2" value={editingItem.name || ""} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={editingItem.isActive ?? true} onChange={e => setEditingItem({...editingItem, isActive: e.target.checked})} />
+                    Active
+                  </label>
+                </>
+              )}
+
+              {modalType === "banner" && (
+                <>
+                  <input placeholder="Title (Optional)" className="rounded border p-2" value={editingItem.title || ""} onChange={e => setEditingItem({...editingItem, title: e.target.value})} />
+                  <input placeholder="Image URL" required className="rounded border p-2" value={editingItem.imageUrl || ""} onChange={e => setEditingItem({...editingItem, imageUrl: e.target.value})} />
+                  <input placeholder="Link (Optional)" className="rounded border p-2" value={editingItem.link || ""} onChange={e => setEditingItem({...editingItem, link: e.target.value})} />
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={editingItem.isActive ?? true} onChange={e => setEditingItem({...editingItem, isActive: e.target.checked})} />
+                    Active
+                  </label>
+                </>
+              )}
+
+              {modalType === "testimonial" && (
+                <>
+                  <input placeholder="Name" required className="rounded border p-2" value={editingItem.name || ""} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
+                  <textarea placeholder="Text" required className="rounded border p-2" value={editingItem.text || ""} onChange={e => setEditingItem({...editingItem, text: e.target.value})} />
+                  <input type="number" min="1" max="5" placeholder="Rating (1-5)" required className="rounded border p-2" value={editingItem.rating || 5} onChange={e => setEditingItem({...editingItem, rating: e.target.value})} />
+                  <label className="flex items-center gap-2">
+                    <input type="checkbox" checked={editingItem.isActive ?? true} onChange={e => setEditingItem({...editingItem, isActive: e.target.checked})} />
+                    Active
+                  </label>
+                </>
+              )}
+
+              <div className="mt-4 flex gap-2">
+                <button type="submit" className="flex-1 rounded bg-zinc-900 py-2 text-white hover:bg-zinc-800">Save</button>
+                <button type="button" onClick={() => setModalOpen(false)} className="flex-1 rounded bg-zinc-200 py-2 hover:bg-zinc-300">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
-}
-
-function Modal({ isOpen, onClose, type, initialData, refreshData, base }: any) {
-    const [formData, setFormData] = useState(initialData || {});
-    const [loading, setLoading] = useState(false);
-
-    useEffect(() => {
-        if (initialData) setFormData(initialData);
-        else setFormData({});
-    }, [initialData]);
-
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-        setLoading(true);
-        const token = localStorage.getItem("token") || "";
-        const endpoint = type === "product" ? "products" : type === "category" ? "categories" : "banners";
-        const url = initialData ? `${base}/api/${endpoint}/${initialData._id}` : `${base}/api/${endpoint}`;
-        const method = initialData ? "PATCH" : "POST";
-
-        // Clean data for product
-        const payload = { ...formData };
-        if (type === "product") {
-            payload.price = Number(payload.price);
-        }
-
-        const res = await fetch(url, {
-            method,
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            body: JSON.stringify(payload),
-        });
-
-        if (res.ok) {
-            refreshData();
-            onClose();
-        } else {
-            alert("Operation failed");
-        }
-        setLoading(false);
-    }
-
-    const handleChange = (e: any) => {
-        const { name, value, type, checked } = e.target;
-        setFormData((prev: any) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-    };
-
-    return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-            <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-                <h2 className="text-xl font-bold mb-4">{initialData ? "Edit" : "Create"} {type.charAt(0).toUpperCase() + type.slice(1)}</h2>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    {type === "product" && (
-                        <>
-                            <input name="title" placeholder="Product Title" value={formData.title || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                            <textarea name="description" placeholder="Description" value={formData.description || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                            <div className="grid grid-cols-2 gap-4">
-                                <input name="price" type="number" placeholder="Price" value={formData.price || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                                <input name="category" placeholder="Category" value={formData.category || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                            </div>
-                            <input name="imageUrl" placeholder="Image URL" value={formData.imageUrl || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                            <label className="flex items-center gap-2">
-                                <input type="checkbox" name="inStock" checked={formData.inStock !== false} onChange={handleChange} />
-                                In Stock
-                            </label>
-                        </>
-                    )}
-                    {type === "category" && (
-                        <>
-                            <input name="name" placeholder="Category Name" value={formData.name || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                            <label className="flex items-center gap-2">
-                                <input type="checkbox" name="isActive" checked={formData.isActive !== false} onChange={handleChange} />
-                                Active
-                            </label>
-                        </>
-                    )}
-                    {type === "banner" && (
-                        <>
-                            <input name="title" placeholder="Title (Optional)" value={formData.title || ""} onChange={handleChange} className="w-full rounded border p-2" />
-                            <input name="imageUrl" placeholder="Image URL" value={formData.imageUrl || ""} onChange={handleChange} className="w-full rounded border p-2" required />
-                            <input name="link" placeholder="Link URL (Optional)" value={formData.link || ""} onChange={handleChange} className="w-full rounded border p-2" />
-                            <label className="flex items-center gap-2">
-                                <input type="checkbox" name="isActive" checked={formData.isActive !== false} onChange={handleChange} />
-                                Active
-                            </label>
-                        </>
-                    )}
-                    <div className="flex justify-end gap-2 pt-4">
-                        <button type="button" onClick={onClose} className="px-4 py-2 text-zinc-600 hover:bg-zinc-100 rounded">Cancel</button>
-                        <button type="submit" disabled={loading} className="px-4 py-2 bg-zinc-900 text-white rounded hover:bg-zinc-700">
-                            {loading ? "Saving..." : "Save"}
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    );
 }
