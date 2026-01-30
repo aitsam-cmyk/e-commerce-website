@@ -10,12 +10,16 @@ interface ProductGalleryProps {
 export default function ProductGallery({ images, title }: ProductGalleryProps) {
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const fallback = "https://dummyimage.com/800x800/eee/aaa.jpg&text=Image";
-  const resolvedImages = images.map((src) => {
-    if (!src) return fallback;
-    if (src.startsWith("/uploads")) return `${base}${src}`;
-    if (src.startsWith("/placeholder")) return fallback;
-    return src;
-  });
+  const normalize = (url?: string) => {
+    if (!url) return fallback;
+    const u = url.trim();
+    if (u.startsWith("http://") || u.startsWith("https://")) return u;
+    if (u.startsWith("/uploads")) return `${base}${u}`;
+    if (u.startsWith("uploads")) return `${base}/${u}`;
+    if (u.startsWith("/placeholder")) return fallback;
+    return u;
+  };
+  const resolvedImages = images.map((src) => normalize(src));
   const [selectedImage, setSelectedImage] = useState(resolvedImages[0]);
 
   return (
@@ -28,6 +32,7 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
           sizes="(max-width: 768px) 100vw, 50vw" 
           className="object-cover transition-all duration-500 ease-in-out"
           priority
+          unoptimized
         />
       </div>
       {resolvedImages.length > 1 && (
@@ -42,7 +47,7 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
                   : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-400 dark:hover:border-zinc-600"
               }`}
             >
-              <Image src={src} alt={`${title} ${i + 1}`} fill sizes="80px" className="object-cover" />
+              <Image src={src} alt={`${title} ${i + 1}`} fill sizes="80px" className="object-cover" unoptimized />
             </button>
           ))}
         </div>

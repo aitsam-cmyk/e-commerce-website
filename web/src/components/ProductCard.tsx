@@ -5,13 +5,16 @@ import { Product } from "../types/product";
 export default function ProductCard({ product }: { product: Product }) {
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
   const fallback = "https://dummyimage.com/600x600/eee/aaa.jpg&text=Product";
-  const resolvedSrc = product.imageUrl
-    ? (product.imageUrl.startsWith("/uploads") 
-        ? `${base}${product.imageUrl}` 
-        : product.imageUrl.startsWith("/placeholder") 
-          ? fallback 
-          : product.imageUrl)
-    : fallback;
+  const normalize = (url?: string) => {
+    if (!url) return fallback;
+    const u = url.trim();
+    if (u.startsWith("http://") || u.startsWith("https://")) return u;
+    if (u.startsWith("/uploads")) return `${base}${u}`;
+    if (u.startsWith("uploads")) return `${base}/${u}`;
+    if (u.startsWith("/placeholder")) return fallback;
+    return u;
+  };
+  const resolvedSrc = normalize(product.imageUrl);
   return (
     <Link href={`/products/${product._id}`} className="block">
       <div className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">
@@ -21,6 +24,7 @@ export default function ProductCard({ product }: { product: Product }) {
             alt={product.title}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
+            unoptimized
             className="object-cover transition-transform duration-300 group-hover:scale-105"
           />
           {product.inStock && product.stock > 0 ? (
