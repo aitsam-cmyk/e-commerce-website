@@ -31,13 +31,17 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="mx-auto max-w-md px-4 py-10">
-      <h1 className="text-2xl font-bold mb-5">Login</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input type="email" placeholder="Email" className="w-full border p-2 rounded" onChange={(e)=>setEmail(e.target.value)} required />
-        <input type="password" placeholder="Password" className="w-full border p-2 rounded" onChange={(e)=>setPassword(e.target.value)} required />
-        <button disabled={loading} className="w-full bg-black text-white p-2 rounded">{loading ? "Please wait..." : "Login"}</button>
-      </form>
-    </div>
+    <section className="auth-hero">
+      <div className="mx-auto max-w-md px-4 py-10 w-full">
+        <div className="card rounded-2xl p-6 shadow-xl">
+          <h1 className="text-2xl font-bold mb-5">Login</h1>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <input type="email" placeholder="Email" className="w-full border p-2 rounded" onChange={(e)=>setEmail(e.target.value)} required />
+            <input type="password" placeholder="Password" className="w-full border p-2 rounded" onChange={(e)=>setPassword(e.target.value)} required />
+            <button disabled={loading} className="w-full bg-zinc-900 text-white p-2 rounded hover:bg-zinc-800">{loading ? "Please wait..." : "Login"}</button>
+          </form>
+        </div>
+      </div>
+    </section>
   );
 }

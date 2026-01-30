@@ -3,14 +3,12 @@
 @tailwind utilities;
 :root {
     --background: #ffffff;
-    --foreground: #171717;
+    --foreground: #111827;
 }
 
-@media (prefers-color-scheme: dark) {
-     :root {
-        --background: #0a0a0a;
-        --foreground: #ededed;
-    }
+[data-theme="dark"] {
+    --background: #0b0f19;
+    --foreground: #e5e7eb;
 }
 
 body {
@@ -21,4 +19,22 @@ body {
 
 .font-serif {
     font-family: var(--font-playfair), Georgia, Cambria, Times New Roman, Times, serif;
+}
+
+.auth-hero {
+    min-height: 100vh;
+    background-image: linear-gradient(rgba(17, 24, 39, 0.4), rgba(17, 24, 39, 0.4)), url("/globe.svg");
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+}
+
+.card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: saturate(180%) blur(8px);
+}
+
+[data-theme="dark"] .card {
+    background: rgba(17, 24, 39, 0.7);
 }

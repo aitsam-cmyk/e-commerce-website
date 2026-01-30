@@ -23,7 +23,8 @@
          cart.push({ ...item, quantity: item.quantity || 1 });
        }
        localStorage.setItem("cart", JSON.stringify(cart));
-       alert("Added to cart");
+      window.dispatchEvent(new Event("cart:updated"));
+      alert("Added to cart");
      } catch {
        alert("Failed to add to cart");
      }
