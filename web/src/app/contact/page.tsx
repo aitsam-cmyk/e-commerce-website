@@ -1,44 +1,20 @@
- "use client";
- import { useState } from "react";
- 
- export default function ContactPage() {
-   const [name, setName] = useState("");
-   const [email, setEmail] = useState("");
-   const [message, setMessage] = useState("");
- 
-   function handleSubmit(e: React.FormEvent) {
-     e.preventDefault();
-     alert("Message sent");
-   }
- 
-   return (
-     <div className="mx-auto max-w-md px-4 py-10">
-       <h1 className="text-2xl font-semibold">Contact</h1>
-       <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-         <input
-           value={name}
-           onChange={(e) => setName(e.target.value)}
-           placeholder="Your name"
-           className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-           required
-         />
-         <input
-           type="email"
-           value={email}
-           onChange={(e) => setEmail(e.target.value)}
-           placeholder="Email"
-           className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm"
-           required
-         />
-         <textarea
-           value={message}
-           onChange={(e) => setMessage(e.target.value)}
-           placeholder="Message"
-           className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm h-28"
-           required
-         />
-         <button className="w-full rounded-md bg-zinc-900 px-4 py-2 text-white">Send</button>
-       </form>
-     </div>
-   );
- }
+"use client";
+export default function ContactPage() {
+  return (
+    <div className="mx-auto max-w-md px-4 py-10">
+      <h1 className="text-2xl font-bold mb-6">Contact Us</h1>
+      <form 
+        action="https://formspree.io/f/xrekadda" 
+        method="POST" 
+        className="space-y-4"
+      >
+        <input name="name" type="text" placeholder="Aapka Naam" className="w-full border p-2 rounded" required />
+        <input name="email" type="email" placeholder="Aapka Email" className="w-full border p-2 rounded" required />
+        <textarea name="message" placeholder="Message likhein..." className="w-full border p-2 rounded h-32" required />
+        <button type="submit" className="w-full bg-zinc-900 text-white p-2 rounded hover:bg-black">
+          Send Message
+        </button>
+      </form>
+    </div>
+  );
+}
