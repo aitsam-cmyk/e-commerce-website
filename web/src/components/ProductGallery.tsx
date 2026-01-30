@@ -8,7 +8,9 @@ interface ProductGalleryProps {
 }
 
 export default function ProductGallery({ images, title }: ProductGalleryProps) {
-  const [selectedImage, setSelectedImage] = useState(images[0]);
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const resolvedImages = images.map((src) => src.startsWith("/uploads") ? `${base}${src}` : src);
+  const [selectedImage, setSelectedImage] = useState(resolvedImages[0]);
 
   return (
     <div>
@@ -22,9 +24,9 @@ export default function ProductGallery({ images, title }: ProductGalleryProps) {
           priority
         />
       </div>
-      {images.length > 1 && (
+      {resolvedImages.length > 1 && (
         <div className="mt-4 flex gap-3 overflow-x-auto pb-2">
-          {images.map((src, i) => (
+          {resolvedImages.map((src, i) => (
             <button
               key={i}
               onClick={() => setSelectedImage(src)}

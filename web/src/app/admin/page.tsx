@@ -106,8 +106,8 @@ export default function AdminPage() {
 
     Promise.all([
       fetch(`${base}/api/products`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/categories`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/banners`, { headers }).then((r) => r.json()),
+      fetch(`${base}/api/categories?all=true`, { headers }).then((r) => r.json()),
+      fetch(`${base}/api/banners?all=true`, { headers }).then((r) => r.json()),
       fetch(`${base}/api/orders/all`, { headers }).then((r) => r.json()),
       fetch(`${base}/api/reviews`, { headers }).then((r) => r.json()),
       fetch(`${base}/api/testimonials`, { headers }).then((r) => r.json()),
@@ -241,7 +241,7 @@ export default function AdminPage() {
   const handleUpdateOrderStatus = async (id: string, status: string) => {
       const token = localStorage.getItem("token");
       try {
-        await fetch(`${base}/api/orders/${id}`, {
+        await fetch(`${base}/api/orders/${id}/status`, {
             method: "PATCH",
             headers: { 
                 "Content-Type": "application/json",
@@ -257,7 +257,7 @@ export default function AdminPage() {
   };
 
   // Stats
-  const totalEarnings = orders.reduce((acc, o) => acc + (o.totalAmount || 0), 0);
+  const totalEarnings = orders.filter(o => o.status === 'delivered').reduce((acc, o) => acc + (o.totalAmount || 0), 0);
   const totalSales = products.reduce((acc, p) => acc + (p.sales || 0), 0);
   const totalStock = products.reduce((acc, p) => acc + (p.stock || 0), 0);
 

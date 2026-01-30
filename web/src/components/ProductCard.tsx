@@ -3,12 +3,16 @@ import Link from "next/link";
 import { Product } from "../types/product";
 
 export default function ProductCard({ product }: { product: Product }) {
+  const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const resolvedSrc = product.imageUrl
+    ? (product.imageUrl.startsWith("/uploads") ? `${base}${product.imageUrl}` : product.imageUrl)
+    : "https://dummyimage.com/600x600/eee/aaa.jpg&text=Product";
   return (
     <Link href={`/products/${product._id}`} className="block">
       <div className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">
         <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-800">
           <Image
-            src={product.imageUrl || "https://dummyimage.com/600x600/eee/aaa.jpg&text=Product"}
+            src={resolvedSrc}
             alt={product.title}
             fill
             sizes="(max-width: 768px) 50vw, 25vw"
