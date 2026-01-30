@@ -6,21 +6,26 @@ import ThemeToggle from "./ThemeToggle";
 export default function NavBar() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isCustomer, setIsCustomer] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(false);
   const [count, setCount] = useState(0);
 
   useEffect(() => {
     // Check Admin Role
     const token = localStorage.getItem("token");
     if (token) {
+      setLoggedIn(true);
       try {
         const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.role === 'admin') setIsAdmin(true);
+        if (payload.role === 'admin') {
+            setIsAdmin(true);
+        } else {
+            setIsCustomer(true);
+        }
       } catch (e) {
         console.error("Failed to decode token", e);
       }
     }
 
-    setIsCustomer(false);
     try {
       const raw = localStorage.getItem("cart");
       const cart = raw ? JSON.parse(raw) : [];
@@ -66,7 +71,7 @@ export default function NavBar() {
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium">
           <Link href="/" className="hover:text-emerald-400 transition-colors">Home</Link>
           <Link href="/products" className="hover:text-emerald-400 transition-colors">Products</Link>
-          {!isAdmin && (
+          {!loggedIn && (
              <>
                <Link href="/login" className="hover:text-emerald-400 transition-colors">Login</Link>
                <Link href="/signup" className="hover:text-emerald-400 transition-colors">Signup</Link>
