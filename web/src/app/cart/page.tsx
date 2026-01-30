@@ -18,10 +18,11 @@
    }, []);
  
    function removeItem(id: string) {
-     const next = items.filter((i) => i.productId !== id);
-     setItems(next);
-     localStorage.setItem("cart", JSON.stringify(next));
-   }
+    const next = items.filter((i) => i.productId !== id);
+    setItems(next);
+    localStorage.setItem("cart", JSON.stringify(next));
+    window.dispatchEvent(new Event("cart:updated"));
+  }
  
    const subtotal = items.reduce((s, it) => s + Number(it.price) * Number(it.quantity || 1), 0);
  

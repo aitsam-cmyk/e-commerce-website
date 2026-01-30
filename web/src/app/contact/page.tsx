@@ -1,7 +1,7 @@
 "use client";
 export default function ContactPage() {
   return (
-    <section className="auth-hero">
+    <section className="hero-common auth-bg-contact">
       <div className="mx-auto max-w-md px-4 py-10 w-full">
         <div className="card rounded-2xl p-6 shadow-xl">
           <h1 className="text-2xl font-bold mb-6">Contact Us</h1>
