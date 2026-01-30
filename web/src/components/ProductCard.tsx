@@ -4,9 +4,14 @@ import { Product } from "../types/product";
 
 export default function ProductCard({ product }: { product: Product }) {
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+  const fallback = "https://dummyimage.com/600x600/eee/aaa.jpg&text=Product";
   const resolvedSrc = product.imageUrl
-    ? (product.imageUrl.startsWith("/uploads") ? `${base}${product.imageUrl}` : product.imageUrl)
-    : "https://dummyimage.com/600x600/eee/aaa.jpg&text=Product";
+    ? (product.imageUrl.startsWith("/uploads") 
+        ? `${base}${product.imageUrl}` 
+        : product.imageUrl.startsWith("/placeholder") 
+          ? fallback 
+          : product.imageUrl)
+    : fallback;
   return (
     <Link href={`/products/${product._id}`} className="block">
       <div className="group rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">

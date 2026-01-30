@@ -9,7 +9,13 @@ interface ProductGalleryProps {
 
 export default function ProductGallery({ images, title }: ProductGalleryProps) {
   const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
-  const resolvedImages = images.map((src) => src.startsWith("/uploads") ? `${base}${src}` : src);
+  const fallback = "https://dummyimage.com/800x800/eee/aaa.jpg&text=Image";
+  const resolvedImages = images.map((src) => {
+    if (!src) return fallback;
+    if (src.startsWith("/uploads")) return `${base}${src}`;
+    if (src.startsWith("/placeholder")) return fallback;
+    return src;
+  });
   const [selectedImage, setSelectedImage] = useState(resolvedImages[0]);
 
   return (
