@@ -23,7 +23,13 @@ export default function LoginPage() {
     if (res.ok) {
       localStorage.setItem("token", data.token);
       alert("Login Successful");
-      router.push("/"); 
+      
+      // Check role and redirect
+      if (data.user?.role === "admin") {
+        router.push("/admin");
+      } else {
+        router.push("/");
+      }
     } else {
       alert(data.error || data.message || "Email ya Password galat hai");
     }
