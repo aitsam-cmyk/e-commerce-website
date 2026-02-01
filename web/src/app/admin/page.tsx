@@ -104,13 +104,21 @@ export default function AdminPage() {
     const token = localStorage.getItem("token") || "";
     const headers = { Authorization: `Bearer ${token}` };
 
+    const safeFetch = (url: string) => 
+      fetch(url, { headers })
+        .then(r => r.ok ? r.json() : [])
+        .catch(e => {
+          console.error(`Failed to fetch ${url}`, e);
+          return [];
+        });
+
     Promise.all([
-      fetch(`${base}/api/products`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/categories?all=true`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/banners?all=true`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/orders/all`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/reviews`, { headers }).then((r) => r.json()),
-      fetch(`${base}/api/testimonials`, { headers }).then((r) => r.json()),
+      safeFetch(`${base}/api/products`),
+      safeFetch(`${base}/api/categories?all=true`),
+      safeFetch(`${base}/api/banners?all=true`),
+      safeFetch(`${base}/api/orders/all`),
+      safeFetch(`${base}/api/reviews`),
+      safeFetch(`${base}/api/testimonials`),
     ]).then(([ps, cs, bs, os, rs, ts]) => {
       if (Array.isArray(ps)) setProducts(ps);
       if (Array.isArray(cs)) setCategories(cs);
@@ -118,7 +126,7 @@ export default function AdminPage() {
       if (Array.isArray(os)) setOrders(os);
       if (Array.isArray(rs)) setReviews(rs);
       if (Array.isArray(ts)) setTestimonials(ts);
-    }).catch(console.error);
+    });
   };
 
   useEffect(() => {
