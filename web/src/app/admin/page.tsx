@@ -546,6 +546,7 @@ export default function AdminPage() {
               {modalType === "category" && (
                 <>
                   <input placeholder="Name" required className="rounded border p-2 dark:bg-zinc-700 dark:border-zinc-600" value={editingItem.name || ""} onChange={e => setEditingItem({...editingItem, name: e.target.value})} />
+                  <input placeholder="Emoji Icon (e.g. 👗)" className="rounded border p-2 dark:bg-zinc-700 dark:border-zinc-600" value={editingItem.icon || ""} onChange={e => setEditingItem({...editingItem, icon: e.target.value})} />
                   <label className="flex items-center gap-2">
                     <input type="checkbox" checked={editingItem.isActive ?? true} onChange={e => setEditingItem({...editingItem, isActive: e.target.checked})} />
                     Active
