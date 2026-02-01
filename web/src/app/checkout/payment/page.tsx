@@ -1,7 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function PaymentStep() {
+  const router = useRouter();
   const [draft, setDraft] = useState<any | null>(null);
   const [method, setMethod] = useState<string>("easypaisa");
   const [reference, setReference] = useState("");
@@ -10,6 +12,13 @@ export default function PaymentStep() {
   const [invEmail, setInvEmail] = useState("");
   const [invPhone, setInvPhone] = useState("");
   const [invTaxId, setInvTaxId] = useState("");
+
+  // New State for confirmation flow
+  const [showConfirmation, setShowConfirmation] = useState(false);
+  const [bankDetails, setBankDetails] = useState<any[]>([]);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofUrl, setProofUrl] = useState("");
+  const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
     const raw = sessionStorage.getItem("checkoutDraft");
@@ -25,6 +34,13 @@ export default function PaymentStep() {
         setDraft(null);
       }
     }
+
+    // Fetch bank details
+    const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+    fetch(`${base}/api/bank-details`)
+      .then((res) => res.json())
+      .then((data) => setBankDetails(data))
+      .catch((err) => console.error("Failed to fetch bank details", err));
   }, []);
 
   const subtotal = (draft?.items || []).reduce((s: number, it: any) => s + Number(it.price) * Number(it.quantity), 0);
@@ -33,6 +49,30 @@ export default function PaymentStep() {
   const codFee = method === "cod" ? 100 : 0;
   const walletDiscount = method === "easypaisa" || method === "jazzcash" ? Math.round(subtotal * 0.05) : 0;
   const total = subtotal + tax + shipping + codFee - walletDiscount;
+
+  async function handleUpload(file: File) {
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+    try {
+      const base = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000";
+      const res = await fetch(`${base}/api/upload`, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.url) {
+        setProofUrl(data.url);
+      } else {
+        alert("Upload failed: No URL returned");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function placeOrder() {
     if (!draft) return;
@@ -48,18 +88,122 @@ export default function PaymentStep() {
           items: draft.items,
           paymentMethod: method,
           shippingAddress: draft.shippingAddress,
-          paymentInfo: { reference, payerName: invName || draft.name, payerPhone: invPhone || draft.phone }
+          paymentInfo: { 
+            reference, 
+            payerName: invName || draft.name, 
+            payerPhone: invPhone || draft.phone,
+            proofImageUrl: proofUrl 
+          }
         })
       });
       if (res.ok) {
-        alert("Order placed successfully");
+        alert("Order placed successfully! Admin will be notified.");
         sessionStorage.removeItem("checkoutDraft");
+        router.push("/");
       } else {
         alert("Failed to place order");
       }
+    } catch (err) {
+      console.error(err);
+      alert("Error placing order");
     } finally {
       setPlacing(false);
     }
+  }
+
+  const handleConfirmClick = () => {
+    if (method === "cod") {
+      placeOrder();
+    } else {
+      setShowConfirmation(true);
+    }
+  };
+
+  // Filter relevant bank details
+  const relevantBanks = bankDetails.filter(b => b.method === method);
+
+  if (showConfirmation) {
+    return (
+      <div className="mx-auto max-w-xl px-4 py-10">
+        <h1 className="font-serif text-2xl mb-6 text-center">Complete Payment</h1>
+        <div className="bg-white rounded-xl border border-zinc-200 shadow-sm p-6 space-y-6">
+          
+          {/* Amount Display */}
+          <div className="text-center border-b pb-4">
+            <p className="text-zinc-500 text-sm">Total Amount to Pay</p>
+            <p className="text-3xl font-bold text-emerald-600">Rs {total}</p>
+          </div>
+
+          {/* Bank Details */}
+          <div>
+            <h3 className="font-semibold text-lg mb-3">Please transfer to:</h3>
+            {relevantBanks.length > 0 ? (
+              relevantBanks.map((bank: any) => (
+                <div key={bank._id} className="p-4 bg-zinc-50 rounded-lg border border-zinc-200 mb-3">
+                  <div className="font-bold text-lg text-zinc-800">{bank.bankName || bank.method.toUpperCase()}</div>
+                  <div className="mt-1 text-sm text-zinc-600">
+                    <span className="font-medium">Account Title:</span> {bank.accountTitle}
+                  </div>
+                  <div className="text-sm text-zinc-600">
+                    <span className="font-medium">Account Number:</span> <span className="font-mono bg-white px-1 border rounded">{bank.accountNumber}</span>
+                  </div>
+                  {bank.iban && (
+                    <div className="text-sm text-zinc-600">
+                      <span className="font-medium">IBAN:</span> {bank.iban}
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <p className="text-red-500 text-sm">No account details available for this method. Please contact support.</p>
+            )}
+          </div>
+
+          {/* Screenshot Upload */}
+          <div>
+            <label className="block font-medium mb-2">Upload Payment Screenshot (Required)</label>
+            <div className="flex flex-col gap-2">
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) {
+                    setProofFile(e.target.files[0]);
+                    handleUpload(e.target.files[0]);
+                  }
+                }}
+                className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+              />
+              {uploading && <p className="text-sm text-blue-600 animate-pulse">Uploading...</p>}
+              {proofUrl && (
+                <div className="mt-2">
+                  <p className="text-sm text-emerald-600 mb-1">✓ Screenshot uploaded</p>
+                  <img src={proofUrl} alt="Payment Proof" className="h-32 object-contain border rounded bg-zinc-50" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-4 pt-2">
+            <button 
+              onClick={() => setShowConfirmation(false)} 
+              className="flex-1 py-3 border border-zinc-300 rounded-xl font-medium text-zinc-700 hover:bg-zinc-50 transition"
+            >
+              Back
+            </button>
+            <button
+              onClick={placeOrder}
+              disabled={!proofUrl || placing}
+              className="flex-1 py-3 bg-emerald-600 text-white rounded-xl font-medium shadow-sm hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            >
+              {placing ? "Processing..." : "Confirm & Send"}
+            </button>
+          </div>
+          
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -79,39 +223,54 @@ export default function PaymentStep() {
               <input value={invPhone} onChange={(e) => setInvPhone(e.target.value)} placeholder="Invoice Phone" className="rounded-md border border-zinc-300 px-3 py-2 text-sm" />
             </div>
           </div>
-          <div className="grid gap-3 sm:grid-cols-3">
+          
+          <div className="grid gap-3 sm:grid-cols-2">
             <button
-              className={`rounded-xl border px-4 py-6 text-sm ${method === "easypaisa" ? "border-emerald-600" : "border-zinc-200"}`}
+              className={`rounded-xl border px-4 py-6 text-sm text-left transition ${method === "easypaisa" ? "border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600" : "border-zinc-200 hover:border-emerald-200"}`}
               onClick={() => setMethod("easypaisa")}
             >
-              Easypaisa
+              <div className="font-semibold">Easypaisa</div>
               <div className="mt-1 text-xs text-emerald-700">Wallet discount up to 5%</div>
             </button>
             <button
-              className={`rounded-xl border px-4 py-6 text-sm ${method === "jazzcash" ? "border-emerald-600" : "border-zinc-200"}`}
+              className={`rounded-xl border px-4 py-6 text-sm text-left transition ${method === "jazzcash" ? "border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600" : "border-zinc-200 hover:border-emerald-200"}`}
               onClick={() => setMethod("jazzcash")}
             >
-              JazzCash
+              <div className="font-semibold">JazzCash</div>
               <div className="mt-1 text-xs text-emerald-700">Wallet discount up to 5%</div>
             </button>
             <button
-              className={`rounded-xl border px-4 py-6 text-sm ${method === "cod" ? "border-emerald-600" : "border-zinc-200"}`}
+              className={`rounded-xl border px-4 py-6 text-sm text-left transition ${method === "bank_transfer" ? "border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600" : "border-zinc-200 hover:border-emerald-200"}`}
+              onClick={() => setMethod("bank_transfer")}
+            >
+              <div className="font-semibold">Bank Transfer</div>
+              <div className="mt-1 text-xs text-zinc-500">Manual transfer</div>
+            </button>
+            <button
+              className={`rounded-xl border px-4 py-6 text-sm text-left transition ${method === "cod" ? "border-emerald-600 bg-emerald-50/10 ring-1 ring-emerald-600" : "border-zinc-200 hover:border-emerald-200"}`}
               onClick={() => setMethod("cod")}
             >
-              Cash on Delivery
+              <div className="font-semibold">Cash on Delivery</div>
               <div className="mt-1 text-xs text-zinc-700">COD fee Rs 100</div>
             </button>
           </div>
+
           <input
             value={reference}
             onChange={(e) => setReference(e.target.value)}
             placeholder="Payment reference (optional)"
             className="rounded-md border border-zinc-300 px-3 py-2 text-sm w-full"
           />
-          <button disabled={placing} onClick={placeOrder} className="rounded-md bg-emerald-600 px-4 py-2 text-white transition hover:scale-[1.02]">
-            {placing ? "Placing..." : "Confirm & Pay"}
+          
+          <button 
+            disabled={placing} 
+            onClick={handleConfirmClick} 
+            className="w-full sm:w-auto rounded-md bg-emerald-600 px-8 py-3 text-white font-medium transition hover:bg-emerald-700 disabled:opacity-70"
+          >
+            {placing ? "Processing..." : "Confirm & Pay"}
           </button>
         </div>
+
         <aside className="sticky top-20 h-fit rounded-xl border border-zinc-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-lg font-semibold">Order Summary</h2>
           <div className="mb-4 rounded-lg border border-zinc-200 bg-white p-3">
