@@ -215,6 +215,28 @@ export default function AdminPage() {
     }
   };
 
+  const handleImageDelete = async (productId: string, fileId: string, isMain: boolean = false) => {
+    if (!confirm("Are you sure you want to delete this image?")) return;
+    const token = localStorage.getItem("token");
+    try {
+        const res = await fetch(`${base}/api/products/${productId}/images/${fileId}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+            const updatedProduct = await res.json();
+            // Update local state to reflect the deletion immediately
+            setEditingItem(updatedProduct);
+            toast.success("Image deleted from ImageKit and Product");
+            refreshData();
+        } else {
+            toast.error("Failed to delete image");
+        }
+    } catch (e) {
+        toast.error("Error deleting image");
+    }
+  };
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -534,15 +556,41 @@ export default function AdminPage() {
                       <label className="block text-sm text-zinc-500 mb-1">Main Image</label>
                       <input type="file" accept="image/*" onChange={(e) => handleFileUpload(e, false)} className="w-full text-sm" />
                       {uploading && <span className="text-xs text-blue-500">Uploading...</span>}
-                      {editingItem.imageUrl && <img src={editingItem.imageUrl} alt="preview" className="h-20 w-auto mt-2 rounded border" />}
+                      {editingItem.imageUrl && (
+                        <div className="relative mt-2 inline-block">
+                          <img src={editingItem.imageUrl} alt="preview" className="h-20 w-auto rounded border" />
+                          {editingItem._id && editingItem.imageFileId && (
+                            <button 
+                              type="button"
+                              onClick={() => handleImageDelete(editingItem._id, editingItem.imageFileId!, true)}
+                              className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 shadow-sm"
+                              title="Delete from ImageKit"
+                            >
+                              ✕
+                            </button>
+                          )}
+                        </div>
+                      )}
                   </div>
 
                   <div className="border p-2 rounded dark:border-zinc-600">
                       <label className="block text-sm text-zinc-500 mb-1">Gallery Images</label>
                       <input type="file" accept="image/*" multiple onChange={(e) => handleFileUpload(e, true)} className="w-full text-sm" />
-                      <div className="flex gap-2 mt-2 flex-wrap">
+                      <div className="flex gap-3 mt-2 flex-wrap">
                         {editingItem.images?.map((img: string, i: number) => (
-                            <img key={i} src={img} alt="gallery" className="h-16 w-16 object-cover rounded border" />
+                            <div key={i} className="relative inline-block">
+                              <img src={img} alt="gallery" className="h-16 w-16 object-cover rounded border" />
+                              {editingItem._id && editingItem.imagesFileIds?.[i] && (
+                                <button 
+                                  type="button"
+                                  onClick={() => handleImageDelete(editingItem._id, editingItem.imagesFileIds![i])}
+                                  className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 text-xs hover:bg-red-600 shadow-sm"
+                                  title="Delete from ImageKit"
+                                >
+                                  ✕
+                                </button>
+                              )}
+                            </div>
                         ))}
                       </div>
                   </div>
