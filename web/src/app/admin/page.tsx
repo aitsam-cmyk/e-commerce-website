@@ -10,7 +10,9 @@ type Product = {
   description: string;
   price: number;
   imageUrl: string;
+  imageFileId?: string;
   images?: string[];
+  imagesFileIds?: string[];
   category: string;
   inStock: boolean;
   stock: number;
@@ -21,12 +23,16 @@ type Category = {
   _id: string;
   name: string;
   isActive: boolean;
+  imageFileId?: string;
+  imageUrl?: string;
+  icon?: string;
 };
 
 type Banner = {
   _id: string;
   title?: string;
   imageUrl: string;
+  imageFileId?: string;
   link?: string;
   isActive: boolean;
   order?: number;
@@ -155,10 +161,15 @@ export default function AdminPage() {
             if (data.urls) {
                 // For products, append to existing images or replace
                 const existingImages = editingItem.images || [];
+                const existingFileIds = editingItem.imagesFileIds || [];
                 // If it's a new product and no main image, use first one
-                const updates: any = { images: [...existingImages, ...data.urls] };
+                const updates: any = { 
+                  images: [...existingImages, ...data.urls],
+                  imagesFileIds: [...existingFileIds, ...(data.fileIds || [])]
+                };
                 if (!editingItem.imageUrl && data.urls.length > 0) {
                     updates.imageUrl = data.urls[0];
+                    updates.imageFileId = data.fileIds?.[0];
                 }
                 setEditingItem({ ...editingItem, ...updates });
                 toast.success("Images uploaded successfully");
@@ -172,7 +183,11 @@ export default function AdminPage() {
             });
             const data = await res.json();
             if (data.url) {
-                setEditingItem({ ...editingItem, imageUrl: data.url });
+                setEditingItem({ 
+                  ...editingItem, 
+                  imageUrl: data.url,
+                  imageFileId: data.fileId
+                });
                 toast.success("Image uploaded successfully");
             }
         }
