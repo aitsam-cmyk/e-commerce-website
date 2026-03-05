@@ -32,7 +32,7 @@ export default function LoginPage() {
         router.push("/");
       }
     } else {
-      alert(data.error || data.message || "Email ya Password galat hai");
+      alert(data.error || data.message || "Email or Password is incorrect");
     }
     setLoading(false);
   }
