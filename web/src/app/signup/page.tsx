@@ -22,10 +22,10 @@ export default function SignupPage() {
     const data = await res.json();
 
     if (res.ok) {
-      alert("Account ban gaya. Ab login karein.");
+      alert("Created Successfully");
       router.push("/login");
     } else {
-      alert(data.error || data.message || "Signup fail. Shayad email pehle se hai.");
+      alert(data.error || data.message || "Account is Already Existed.");
     }
     setLoading(false);
   }
